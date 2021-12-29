@@ -1,0 +1,8 @@
+[Unit]
+Description=PWM Fan Control
+
+[Service]
+ExecStart=/usr/bin/python3 /home/sadviper/ubuntu_os_fan_control.py
+
+[Install]
+WantedBy=multi-user.target
