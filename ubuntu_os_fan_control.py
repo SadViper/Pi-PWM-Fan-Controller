@@ -15,6 +15,7 @@ import threading
 FAN_PIN = 13            # BCM pin used to drive PWM fan
 FAN_RPM = 16            # BCM pin used to read fan rpm
 WAIT_TIME = 1           # [s] Time to wait between each refresh
+MAX_FAN_SPEED = 1500    # Max fan speed to calculate 
 PWM_FREQ = 10000        # [kHz] 25kHz for Noctua PWM control
 
 # Configurable temperature and fan speed
@@ -36,14 +37,12 @@ lgpio.exceptions = False
 def getCpuTemperature():
     res = os.popen('cat /sys/class/thermal/thermal_zone0/temp').readline()
     temp = float(res)/1000
-    #print("temp is {0}".format(temp)) # Uncomment for testing
     return temp
 
 # Set fan speed
 def setFanSpeed(speed):
     lgpio.tx_pwm(h, FAN_PIN, PWM_FREQ, round(speed))
     rpm_print_speed(speed)
-    #print(speed)
     return()
 
 # Handle fan speed
@@ -72,34 +71,17 @@ def resetFan():
     lgpio.gpiochip_close(h) # resets all GPIO ports used by this function
 
 def rpm_print_speed(speed):
-#    print("Speed: " + str(speed))
-#    print("RPM:   " + str(round(speed*30)))
     f = open("/tmp/fan-rpm", "w")
     f.write(str(round(speed*19)))
     f.write('\r\n')
     f.close()
 
-def rpm_counter(chip, gpio, level, tick):
-    global count
-    count += 1
-
-def rpm_print():
-    global count
-    f = open("/tmp/fan-rpm", "w")
-    f.write(str(count*30))
-    f.write('\r\n')
-    f.close()
-    count = 0
-
 try:
-    #lgpio.gpio_claim_alert(h, FAN_RPM, lgpio.RISING_EDGE)
-    #lgpio.callback(h, FAN_RPM, lgpio.RISING_EDGE, func=rpm_counter)
+    FAN_OFFSET = round( MAX_FAN_SPEED / 100 )
     while True:
         temp = float(getCpuTemperature())
         handleFanSpeed(temp)
-#        print("Temp:  " + str(temp))
         time.sleep(WAIT_TIME)
-        #rpm_print()
 
 
 except KeyboardInterrupt: # trap a CTRL+C keyboard interrupt
